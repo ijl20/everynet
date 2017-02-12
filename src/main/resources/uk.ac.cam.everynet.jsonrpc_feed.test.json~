@@ -1,0 +1,40 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.everynet.jsonrpc_feed.JsonrpcFeed",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "jsonrpc_feed",
+            "module.id":             "test",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+              
+            "jsonrpc_feed.log_level":   1,
+
+            "jsonrpc_feed.http.port":   8099,
+
+            "jsonrpc_feed.feeds":     [
+                                       { 
+                                         "feed_id" :   "test",
+                                         "feed_type":  "everynet_app_server",
+                                         "area_id" :   "cam",
+
+                                         "http.get":   false,
+
+                                         "http.post":  true,
+                                         "http.token": "cam-auth-test",
+
+                                         "file_suffix":   ".json",
+                                         "data_bin" :     "/home/ijl20/everynet_data/data_bin",
+                                         "data_monitor" : "/home/ijl20/everynet_data/data_monitor",
+
+                                         "msg_type" :  "feed_everynet_temperature",
+                                         "address" :   "tfc.jsonrpc_feed.test"
+                                       }
+                                     ]
+          }
+        }
+}

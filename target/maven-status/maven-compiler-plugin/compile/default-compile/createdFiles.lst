@@ -1,0 +1,9 @@
+uk/ac/cam/everynet/App.class
+uk/ac/cam/everynet/util/Constants.class
+uk/ac/cam/everynet/jsonrpc_feed/JsonrpcFeed$1.class
+uk/ac/cam/everynet/jsonrpc_feed/ParseFeed$FieldTemplate.class
+uk/ac/cam/everynet/jsonrpc_feed/JsonrpcFeed.class
+uk/ac/cam/everynet/jsonrpc_feed/JsonrpcFeed$1$1.class
+uk/ac/cam/everynet/jsonrpc_feed/ParseFeed.class
+uk/ac/cam/everynet/jsonrpc_feed/ParseFeed$RecordTemplate.class
+uk/ac/cam/everynet/util/Log.class

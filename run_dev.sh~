@@ -1,0 +1,4 @@
+#!/bin/bash
+
+java -cp target/tfc_server-1.0-SNAPSHOT-fat.jar io.vertx.core.Launcher run "service:uk.ac.cam.everynet.jsonrpc_feed.A" -cluster >/dev/null 2>>/home/ijl20/log/feedhandler.test.err & disown
+
