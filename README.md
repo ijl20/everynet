@@ -91,16 +91,21 @@ The main function of this feed handler is to receive the sensor data from the Ca
 Each feed handler will http listen on the url <module.name>/<module.id>/<feed_id>
 
 I.e. the above configuration will listen on TWO urls:
+
 /everynet_feed/A/ascii_decimal
+
 and
+
 /everynet_feed/A/ascii_hex
 
 In this case the feedhandler will listen on port 8087 (and it is assumed Nginx will route the POST requests appropriately)
 
 The feed handler will store each received data packed TWICE, as:
 
-<data_bin>/<dev_eui>/<YY>/<MM>/<DD>/<UTC_timestamp>_YY-MM-DD-hh-mm-ss.json
+<data_bin>/<dev_eui>/YY/MM/DD/<UTC_timestamp>_YY-MM-DD-hh-mm-ss.json
+
 and
+
 <data_monitor>/<dev_eui>/<UTC_timestamp>_YY-MM-DD-hh-mm-ss.json
 
 The latter will OVERWRITE any file previously stored in that directory. The idea is that a separate Unix process could inotifywait on that directory and wake
