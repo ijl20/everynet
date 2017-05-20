@@ -9,5 +9,9 @@ public class Constants {
     public static final int    LOG_WARN = 3;
     public static final int    LOG_FATAL = 4;
     public static final int    LOG_OFF = 5;
+
+// msg_types
+    public static final String EVERYNET_ASCII_DECIMAL = "everynet_ascii_decimal";
+    public static final String EVERYNET_ASCII_HEX = "everynet_ascii_hex";
     
 }

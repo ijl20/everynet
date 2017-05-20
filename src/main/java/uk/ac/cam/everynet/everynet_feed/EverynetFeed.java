@@ -60,7 +60,7 @@ import uk.ac.cam.everynet.util.Constants;
 
 public class EverynetFeed extends AbstractVerticle {
 
-    private final String VERSION = "0.02";
+    private final String VERSION = "0.03";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -293,7 +293,16 @@ public class EverynetFeed extends AbstractVerticle {
 
         JsonObject params = request_data.getJsonObject(0).getJsonObject("params");
 
-        msg.put("decoded_payload", new String(Base64.getDecoder().decode(params.getString("payload"))));
+        if (config.getString("msg_type").equals(Constants.EVERYNET_ASCII_DECIMAL))
+        {
+            msg.put("decoded_payload", new String(Base64.getDecoder().decode(params.getString("payload"))));
+        } else if (config.getString("msg_type").equals(Constants.EVERYNET_ASCII_HEX))
+        {
+            msg.put("decoded_payload", to_hex(Base64.getDecoder().decode(params.getString("payload"))));
+        } else
+        {
+            msg.put("decoded_payload", params.getString("payload"));
+        }
 
         msg.put("dev_eui", params.getString("dev_eui"));
 
@@ -316,6 +325,20 @@ public class EverynetFeed extends AbstractVerticle {
         logger.log(Constants.LOG_WARN, e.getMessage());
     }
   } // end process_feed()
+
+    // simple function to convert an array of bytes to a HEX ascii string
+    private String to_hex(byte[] buf)
+    {
+        final char[] DIGITS = "0123456789ABCDEF".toCharArray();
+//            = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
+        final StringBuffer sb = new StringBuffer(buf.length * 2);
+        for (int i = 0; i < buf.length; i++) {
+            sb.append(DIGITS[(buf[i] >>> 4) & 0x0F]);
+            sb.append(DIGITS[buf[i] & 0x0F]);
+        }
+        return sb.toString();
+    }
 
     // ******************************************************************
     // write_bin_file()
