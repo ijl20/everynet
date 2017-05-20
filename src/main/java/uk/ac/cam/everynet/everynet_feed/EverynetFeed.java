@@ -234,10 +234,14 @@ public class EverynetFeed extends AbstractVerticle {
   {
 
     JsonArray request_data = new JsonArray();
+    JsonObject params; 
+    String dev_eui; // unique identifier from CSN device, contained in json "params>dev_eui"
 
     try {
            JsonObject jo = new JsonObject(buf.toString());
            request_data.add(jo);
+           params = request_data.getJsonObject(0).getJsonObject("params");
+           dev_eui = params.getString("dev_eui");
     }
     catch (Exception e) {
         logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
@@ -260,13 +264,13 @@ public class EverynetFeed extends AbstractVerticle {
     
     // Write file to DATA_BIN
     //
-    final String bin_path = config.getString("data_bin")+"/"+filepath;
+    final String bin_path = config.getString("data_bin")+"/"+dev_eui+"/"+filepath;
     final String file_suffix = config.getString("file_suffix");
     write_bin_file(buf, bin_path, filename, file_suffix);
 
     // Write file to DATA_MONITOR
     //
-    final String monitor_path = config.getString("data_monitor");
+    final String monitor_path = config.getString("data_monitor")+"/"+dev_eui;
     write_monitor_file(buf, monitor_path, filename, file_suffix);
 
     // Place the received data into a suitable EventBus JsonObject message
@@ -279,6 +283,8 @@ public class EverynetFeed extends AbstractVerticle {
     msg.put("filename", filename);
     msg.put("filepath", filepath);
     msg.put("ts", Integer.parseInt(utc_ts));
+    msg.put("dev_eui", dev_eui);
+
 
     try {            
 
@@ -291,8 +297,6 @@ public class EverynetFeed extends AbstractVerticle {
             return;
         }
 
-        JsonObject params = request_data.getJsonObject(0).getJsonObject("params");
-
         if (config.getString("msg_type").equals(Constants.EVERYNET_ASCII_DECIMAL))
         {
             msg.put("decoded_payload", new String(Base64.getDecoder().decode(params.getString("payload"))));
@@ -303,8 +307,6 @@ public class EverynetFeed extends AbstractVerticle {
         {
             msg.put("decoded_payload", params.getString("payload"));
         }
-
-        msg.put("dev_eui", params.getString("dev_eui"));
 
         msg.put("request_data", request_data);
     
@@ -405,7 +407,7 @@ public class EverynetFeed extends AbstractVerticle {
                                     if (!delete_result.succeeded())
                                         {
                                           logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                                                      ": error tfc_data_monitor delete: "+f);
+                                                      ": write_monitor_file error deleting file: "+f);
                                         }
                                 });
                         }
@@ -417,6 +419,15 @@ public class EverynetFeed extends AbstractVerticle {
                                 ": error reading data_monitor path: "+
                                 monitor_path);
                     logger.log(Constants.LOG_WARN, monitor_result.cause().getMessage());
+                    try {
+                        fs.mkdirsBlocking(monitor_path);
+                        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
+                                   ": write_monitor_file created monitor path "+monitor_path);
+                        write_file(fs, buf, monitor_path+"/"+filename+ file_suffix);
+                    } catch (Exception e) {
+                        logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                                   ": write_monitor_file FAIL: error creating monitor path "+monitor_path);
+                    }
                 }
         });
     }
