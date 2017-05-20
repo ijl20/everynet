@@ -52,6 +52,7 @@ import java.time.*;
 import java.time.format.*;
 import java.util.*;
 import java.util.ArrayList;
+import java.util.Base64;
 
 // other tfc_server classes
 import uk.ac.cam.everynet.util.Log;
@@ -353,6 +354,21 @@ public class JsonrpcFeed extends AbstractVerticle {
 
     try {            
         JsonArray request_data = parser.parse_array(buf.toString());
+
+        // *****************************************************************************
+        // **** Only send 'uplink' messages to the eventbus
+        // *****************************************************************************
+        if (!request_data.getJsonObject(0).getString("method").equals("uplink"))
+        {
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": skipping non-uplink msg "+utc_ts);
+            return;
+        }
+
+        JsonObject params = request_data.getJsonObject(0).getJsonObject("params");
+
+        msg.put("decoded_payload", new String(Base64.getDecoder().decode(params.getString("payload"))));
+
+        msg.put("dev_addr", params.getString("dev_addr"));
 
         msg.put("request_data", request_data);
     
