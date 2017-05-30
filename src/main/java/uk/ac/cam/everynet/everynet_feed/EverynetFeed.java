@@ -236,12 +236,21 @@ public class EverynetFeed extends AbstractVerticle {
     JsonArray request_data = new JsonArray();
     JsonObject params; 
     String dev_eui; // unique identifier from CSN device, contained in json "params>dev_eui"
+    String utc_ts = String.valueOf(System.currentTimeMillis() / 1000);
 
     try {
            JsonObject jo = new JsonObject(buf.toString());
            request_data.add(jo);
            params = request_data.getJsonObject(0).getJsonObject("params");
            dev_eui = params.getString("dev_eui");
+           // *****************************************************************************
+           // **** Only process 'uplink' messages
+           // *****************************************************************************
+           if (!request_data.getJsonObject(0).getString("method").equals("uplink"))
+           {
+               logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": skipping non-uplink msg "+utc_ts);
+               return;
+           }
     }
     catch (Exception e) {
         logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
@@ -250,12 +259,12 @@ public class EverynetFeed extends AbstractVerticle {
         return;
     }
 
+
     LocalDateTime local_time = LocalDateTime.now();
     
     String day = local_time.format(DateTimeFormatter.ofPattern("dd"));
     String month = local_time.format(DateTimeFormatter.ofPattern("MM"));
     String year = local_time.format(DateTimeFormatter.ofPattern("yyyy"));
-    String utc_ts = String.valueOf(System.currentTimeMillis() / 1000);
 
     // filename without the suffix
     String filename = utc_ts+"_"+local_time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
