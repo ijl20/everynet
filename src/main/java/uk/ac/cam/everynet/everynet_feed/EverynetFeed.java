@@ -60,7 +60,7 @@ import uk.ac.cam.everynet.util.Constants;
 
 public class EverynetFeed extends AbstractVerticle {
 
-    private final String VERSION = "0.03";
+    private final String VERSION = "0.04";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -312,6 +312,12 @@ public class EverynetFeed extends AbstractVerticle {
         } else if (config.getString("msg_type").equals(Constants.EVERYNET_ASCII_HEX))
         {
             msg.put("decoded_payload", to_hex(Base64.getDecoder().decode(params.getString("payload"))));
+        } else if (config.getString("msg_type").equals(Constants.EVERYNET_ADEUNIS_TEST))
+        {
+            JsonObject adeunis = parse_adeunis_test(params.getString("payload"));
+            msg.put("decoded_payload", to_hex(Base64.getDecoder().decode(params.getString("payload"))));
+            msg.put("lat", adeunis.getFloat("lat"));
+            msg.put("lng", adeunis.getFloat("lng"));
         } else
         {
             msg.put("decoded_payload", params.getString("payload"));
@@ -337,6 +343,113 @@ public class EverynetFeed extends AbstractVerticle {
     }
   } // end process_feed()
 
+    // Parse the payload from the Adeunis test device
+    // http://www.adeunis-rf.com/en/products/lorawan-products/field_test_device_lorawan_868
+    // 0  1  2  3  4  5  6  7  8  9  10 11 12 13
+    // 9E 16 52 17 39 10 00 00 62 60 14 05 0F B5 -> {lat: 52.28985, lng: 0.10433333333333333}
+    // Status
+    // [7] Presence of temperature information 0 or 1
+    // [6] Transmission triggered by the accelerometer 0 or 1
+    // [5] Transmission triggered by pressing pushbutton 1 0 or 1
+    // [4] Presence of GPS information 0 or 1
+    // [3] Presence of Uplink frame counter 0 or 1
+    // [2] Presence of Downlink frame counter 0 or 1
+    // [1] Presence of battery level information 0 or 1
+    // [0] Presence of RSSI and SNR information
+    //    Temperature -128..+127 msb=-128
+    //       Lat 52 degrees
+    //          17.3910 minutes
+    //                byte[5] lsb=N|S (N=positive)
+    //                   000 degrees
+    //                       06.26
+    //                            byte[9] lsb = E|W (E=positive)
+
+    private JsonObject parse_adeunis_test(String payload)
+    {
+        JsonObject jo = new JsonObject();
+        
+        byte[] buf = Base64.getDecoder().decode(payload);
+        boolean[] byte_0 = byte_to_bools(buf[0]);
+
+        // Check for GPS value & parse
+        // bit indicating record included GPS is bit 4 (where bit 0 is lsb) of first byte in record
+        if (byte_0[4])
+        {
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                   ": adeunis record contains GPS "+to_hex(buf));
+
+            // Parse Latitude
+            
+            // latitude is embedded as binary-coded-decimal in the hex
+            // get degrees 10s and 1s
+            float lat = ((buf[2] & 0xF0) >>> 4) * 10; // 10s of degrees lat
+            lat += buf[2] & 0x0F;                     // 1s of degrees lat
+
+            // add minutes 
+            lat += ((buf[3] & 0xF0) >>> 4) * 10.0 / 60;
+            lat += (buf[3] & 0x0F) / 60.0;
+            
+            // add decimals of minutes
+            lat += ((buf[4] & 0xF0) >>> 4) * 0.1 / 60;
+            lat += ( buf[4] & 0x0F)        * 0.01 / 60;
+            lat += ((buf[5] & 0xF0) >>> 4) * 0.001 / 60;
+
+            // if lsb of buf[5] is 1, then lat is South (= negative)
+            if ((buf[5] & 0x01) == 1)
+            {
+                lat = -lat;
+            }
+            
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                   ": adeunis GPS lat="+lat);
+
+            jo.put("lat",lat);
+
+            // Parse Longitude
+            
+            float lng = ((buf[6] & 0xF0) >>> 4) * 100; // 100s of degrees lng
+            lng += ( buf[6] & 0x0F) * 10;              // 10s of degrees lng
+            lng += ( buf[7] & 0xF0) >>> 4;             // 1s of degrees lng
+
+            // add minutes 
+            lng += ( buf[7] & 0x0F) * 10.0 / 60;
+            lng += ((buf[8] & 0xF0) >>> 4) / 60.0;
+            
+            // add decimals of minutes
+            lng += ( buf[8] & 0x0F)        * 0.1 / 60;
+            lng += ((buf[9] & 0xF0) >>> 4) * 0.01 / 60;
+
+            // if lsb of buf[9] is 1, then lng is West (= negative)
+            if ((buf[9] & 0x01) == 1)
+            {
+                lng = -lng;
+            }
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                   ": adeunis GPS lng="+lng);
+
+            jo.put("lng", lng);
+
+        } else
+        {
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                   ": adeunis record does NOT contain GPS");
+        }            
+        return jo;
+    }
+
+    public static boolean[] byte_to_bools(byte x) {
+        boolean bs[] = new boolean[8];
+        bs[0] = ((x & 0x01) != 0);
+        bs[1] = ((x & 0x02) != 0);
+        bs[2] = ((x & 0x04) != 0);
+        bs[3] = ((x & 0x08) != 0);
+        bs[4] = ((x & 0x10) != 0);
+        bs[5] = ((x & 0x20) != 0);
+        bs[6] = ((x & 0x40) != 0);
+        bs[7] = ((x & 0x80) != 0);
+        return bs;
+    }
+    
     // simple function to convert an array of bytes to a HEX ascii string
     private String to_hex(byte[] buf)
     {

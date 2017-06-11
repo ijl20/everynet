@@ -13,5 +13,6 @@ public class Constants {
 // msg_types
     public static final String EVERYNET_ASCII_DECIMAL = "everynet_ascii_decimal";
     public static final String EVERYNET_ASCII_HEX = "everynet_ascii_hex";
+    public static final String EVERYNET_ADEUNIS_TEST = "everynet_adeunis_test";
     
 }

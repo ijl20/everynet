@@ -1,0 +1,297 @@
+<html>
+  <head>
+    <title>CSN Survey</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css"
+       integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ=="
+       crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"
+       integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg=="
+       crossorigin=""></script>
+
+    <script>
+      var survey_data = new Array();
+      var gateway_data = new Array();
+    </script>
+
+    <script src="gateway_data.js"></script>
+    
+<!--    <script src="survey_2017-05-14.js"></script> -->
+    <script src="survey_data_2017-05-10_to_14.js"></script>
+    <script src="survey_data_dev_addr.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-15.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-16.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-17.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-18.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-19.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-20.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-21.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-22.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-23.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-24.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-25.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-26.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-28.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-30.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-05-31.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-06-01.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-06-02.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-06-04.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-06-05.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-06-06.js"></script>
+    <script src="csn_data/test/0018b2000000113e/0018b2000000113e_2017-06-07.js"></script>
+
+<style>
+body {
+   font-family: sans-serif;
+}
+
+#heading_text {
+   font-weight: bold;
+   display: inline-block;
+}
+
+#heading_info
+{
+   display: inline-block;
+   font-size: small;
+}
+
+#map {
+  height: 80vh;
+}
+
+</style>
+
+<script>
+
+var heading_info_el;
+var map;
+
+function init()
+{
+    heading_info_el = document.getElementById('heading_info');
+
+    var ts_from = get_qs('ts_from');
+    var ts_to = get_qs('ts_to');
+    // if we have a date_from, then set ts_from as timestamp at START of that day
+    var date_from = get_qs('date_from');
+    if (date_from) // e.g. 2017-05-22
+    {
+        ts_from = (new Date(date_from).getTime())/1000;
+    }
+    // if we have a date_to, then set ts_to as timestamp at END of that day
+    var date_to = get_qs('date_to');
+    if (date_to) // e.g. 2017-05-22
+    {
+        ts_to = (new Date(date_to).getTime())/1000 + 24*60*60; // date_to timestamp is END of day
+    }
+    console.log('ts_from,to=',ts_from,ts_to);
+
+    init_map();
+
+    //console.log(survey_data[0]);
+
+    draw_gateway_data(gateway_data);
+
+    draw_survey_data(survey_data, ts_from, ts_to);    
+}
+
+function init_map()
+{
+    map = L.map('map').setView([52.1738, 0.1207], 11);
+    L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+}
+
+function draw_gateway_data(gateway_data)
+{
+    for (var i=0; i<gateway_data.length; i++)
+    {
+        //console.log('row',i,'has lat:',row_data.lat);
+        var circle = L.circle([gateway_data[i].lat, gateway_data[i].lng], {
+                color: 'red',
+                fillColor: 'lightred',
+                fillOpacity: 0.5,
+                radius: 400,
+                weight: 2
+            }).addTo(map);
+        circle.on('click', (function (gateway) {
+                                    return function (e) {
+                                        heading_info_el.innerHTML = JSON.stringify(gateway); };})(gateway_data[i]));
+    }
+}
+
+function draw_survey_data(survey_data, ts_from, ts_to)
+{
+    for (var i=0; i< survey_data.length; i++)
+    {
+        var row_string = survey_data[i].replace(/[^\x20-\x7E]+/g, '').replace(/,\"/g,', "');
+        //console.log('Record',i,row_string);
+        var survey_data_row = JSON.parse(row_string);
+        // skip records older than ts_from or newer than ts_to
+        if (ts_from && survey_data_row.ts < ts_from)
+        {
+            continue;
+        }
+        if (ts_to && survey_data_row.ts > ts_to)
+        {
+            continue;
+        }
+        base64_string = survey_data_row.request_data[0].params.payload;
+        //console.log(base64_string);
+        var hex_string = base64toHEX(base64_string);
+        //console.log(hex_string);
+        var row_data = parse_row(hex_string);
+        //console.log('row_data',row_data);
+        if (row_data.hasOwnProperty('lat'))
+        {
+            //console.log('row',i,'has lat:',row_data.lat);
+            var circle = L.circle([row_data.lat, row_data.lng], {
+                    color: 'blue',
+                    fillColor: '#0f3',
+                    fillOpacity: 0.5,
+                    radius: 100,
+                    weight: 2
+                }).addTo(map);
+            circle.on('click', (function (row_string) {
+                                    return function (e) {
+                                        heading_info_el.innerHTML = row_string; };})(row_string));
+        }
+    }
+
+}
+
+function parse_row(hex_string)
+{
+    var row_data = {};
+    
+    //console.log(hex_string);
+    if (hex_string.length < 10)
+    {
+        console.log('skip too short');
+        return {};
+    }
+
+    var nibble_0 = hex_to_bits(hex_string.charAt(0));
+
+    //console.log(nibble_0);
+    
+    if (!nibble_0[0])
+    {
+        console.log('skip no latlong');
+        return {};
+    }
+    
+    //console.log('ok');
+
+    var lat_deg='';
+    lat_deg += hex_string.charAt(4); // deg10
+    lat_deg += hex_string.charAt(5);
+    //console.log('lat_deg',lat_deg);
+
+    var lat_min='';
+    lat_min += hex_string.charAt(6);
+    lat_min += hex_string.charAt(7);
+    //console.log('lat_min',lat_min);
+
+    var lat_min_dec='';
+    lat_min_dec += hex_string.charAt(8);
+    lat_min_dec += hex_string.charAt(9);
+    lat_min_dec += hex_string.charAt(10);
+    //console.log('lat_min_dec',lat_min_dec);
+
+    var nibble_11 = hex_to_bits(hex_string.charAt(11));
+    var lat_NS='N';
+    if (nibble_11[0]) lat_NS='S';
+    //console.log('lat_NS',lat_NS);
+
+    row_data.lat = parseInt(lat_deg)+(parseFloat(lat_min+'.'+lat_min_dec)/60);
+
+    if (lat_NS=='S') row_data.lat = -row_data.lat;
+    
+    var lng_deg='';
+    lng_deg += hex_string.charAt(12); // deg10
+    lng_deg += hex_string.charAt(13);
+    lng_deg += hex_string.charAt(14);
+    //console.log('lng_deg',lng_deg);
+
+    var lng_min='';
+    lng_min += hex_string.charAt(15);
+    lng_min += hex_string.charAt(16);
+    //console.log('lng_min',lng_min);
+
+    var lng_min_dec='';
+    lng_min_dec += hex_string.charAt(17);
+    lng_min_dec += hex_string.charAt(18);
+    //console.log('lng_min_dec',lng_min_dec);
+
+    var nibble_11 = hex_to_bits(hex_string.charAt(19));
+    var lng_EW='E';
+    if (nibble_11[0]) lng_EW='W';
+    //console.log('lng_EW',lng_EW);
+
+    row_data.lng = parseInt(lng_deg)+(parseFloat(lng_min+'.'+lng_min_dec)/60);
+
+    if (lng_EW=='W') row_data.lng = -row_data.lng;
+
+    return row_data;
+}
+
+function base64toHEX(base64)
+{
+    var raw = atob(base64);
+    var HEX = '';
+    for ( i = 0; i < raw.length; i++ )
+    {
+        var _hex = raw.charCodeAt(i).toString(16)
+        HEX += (_hex.length==2?_hex:'0'+_hex);
+    }
+    return HEX.toUpperCase();
+}
+
+function hex_to_bits(hex_char)
+{
+    //console.log('hex_to_bits',hex_char);
+    
+    if (hex_char=='0') return [false,false,false,false];
+    if (hex_char=='1') return [true ,false,false,false];
+    if (hex_char=='2') return [false,true ,false,false];
+    if (hex_char=='3') return [true ,true ,false,false];
+    if (hex_char=='4') return [false,false,true ,false];
+    if (hex_char=='5') return [true ,false,true ,false];
+    if (hex_char=='6') return [false,true ,true ,false];
+    if (hex_char=='7') return [true ,true ,true ,false];
+    if (hex_char=='8') return [false,false,false,true];
+    if (hex_char=='9') return [true ,false,false,true];
+    if (hex_char=='A') return [false,true ,false,true];
+    if (hex_char=='B') return [true ,true ,false,true];
+    if (hex_char=='C') return [false,false,true ,true];
+    if (hex_char=='D') return [true ,false,true ,true];
+    if (hex_char=='E') return [false,true ,true ,true];
+    if (hex_char=='F') return [true ,true ,true ,true];
+    console.log('hex_to_bits error non hex char');
+    return [];
+}
+
+function get_qs(name)
+{
+        var url = window.location.href;
+        name = name.replace(/[\[\]]/g, "\\$&");
+        var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                    results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
+</script>
+  </head>
+<body onload='init()'>
+  <div id='heading_block'>
+    <div id='heading_text'>CSN Survey</div>
+    <div id='heading_info'>Click on any point to see data</div>
+  </div><!-- end heading_block -->
+<div id="map"></div>
+</body>
+</html>
